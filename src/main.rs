@@ -1,14 +1,11 @@
-use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{web, App, HttpServer};
 use dotenvy::dotenv;
 use migration::{Migrator, MigratorTrait};
 use std::env;
 
-use sea_orm::{DatabaseConnection, EntityTrait};
-
 mod db;
 use db::connect_to_db;
-
-use entity::products;
+mod handlers; 
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -31,38 +28,8 @@ async fn main() -> std::io::Result<()> {
 }
 
 fn init(cfg: &mut web::ServiceConfig) {
-    cfg.service(get_products);
-    cfg.service(get_product);
-    
-}
-
-#[get("/products")]
-async fn get_products(db: web::Data<DatabaseConnection>) -> impl Responder {
-    match products::Entity::find()
-        .all(db.get_ref())
-        .await {
-            Ok(products) => HttpResponse::Ok().json(products),
-            Err(err) => {
-                eprintln!("Error fetching products: {:?}", err);
-                HttpResponse::InternalServerError().body("Error fetching products")
-            }
-        }
-}
-
-#[get("/products/{id}")]
-async fn get_product(product_id: web::Path<i32>, db: web::Data<DatabaseConnection>) -> impl Responder {
-    let id = product_id.into_inner();
-    if id <= 0 {
-        return HttpResponse::BadRequest().body("Invalid Product ID");
-    }
-
-    match products::Entity::find_by_id(id)
-        .one(db.get_ref())
-        .await {
-            Ok(products) => HttpResponse::Ok().json(products),
-            Err(err) => {
-                eprintln!("Error fetching products: {:?}", err);
-                HttpResponse::InternalServerError().body("Error fetching products")
-            }
-        }    
+    cfg.service(handlers::products::get_products);
+    cfg.service(handlers::products::get_product);
+    cfg.service(handlers::auth::register);
+    cfg.service(handlers::auth::login);
 }

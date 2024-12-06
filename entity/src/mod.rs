@@ -2,6 +2,5 @@
 
 pub mod prelude;
 
+pub mod customers;
 pub mod products;
-
-pub mod lib;

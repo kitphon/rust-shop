@@ -18,3 +18,4 @@ validator = "0.19.0"
 
 migration = { path = "migration" } # depends on your needs
 entity = { path = "entity" }
+bcrypt = "0.16.0"
