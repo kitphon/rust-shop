@@ -4,6 +4,7 @@ use sea_orm::{ActiveModelTrait, EntityTrait, QueryFilter, ColumnTrait, DatabaseC
 use serde::{Deserialize, Serialize};
 
 use entity::customers;
+use crate::auth_utils::generate_jwt;
 
 #[derive(Deserialize)]
 pub struct RegisterRequest {
@@ -47,6 +48,7 @@ pub struct LoginRequest {
 #[derive(Serialize)]
 pub struct LoginResponse {
     pub message: String,
+    pub token: String
 }
 
 #[post("/customer/login")]
@@ -59,8 +61,10 @@ pub async fn login(db: web::Data<sea_orm::DatabaseConnection>, form: web::Json<L
     match user {
         Ok(Some(user)) => {
             if verify(&form.password, &user.password_hash).unwrap_or(false) {
+                let token = generate_jwt(&user.id, &user.email, &user.name);
                 HttpResponse::Ok().json(LoginResponse {
                     message: "Login successful".to_string(),
+                    token
                 })
             } else {
                 HttpResponse::Unauthorized().body("Invalid credentials")
