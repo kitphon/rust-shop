@@ -15,16 +15,13 @@ pub struct Claims {
 }
 
 pub fn generate_jwt(user_id: &i32, email: &str, name: &str) -> String {
-    let jwt_duration = env::var("JWT_DURATION").expect("JWT_DURATION must be set");
+    let jwt_duration = env::var("JWT_DURATION").unwrap_or(String::from("24"));
     let duration: i64;
-
     match jwt_duration.parse::<i64>() {
         Ok(parsed_duration) => duration = parsed_duration,
-        Err(_) => {
-            duration = 24;
-        }
+        Err(_) => duration = 24
     }
-
+    
     let expiration = Utc::now()
         .checked_add_signed(Duration::hours(duration))
         .expect("valid timestamp")

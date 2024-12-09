@@ -18,12 +18,20 @@ async fn main() -> std::io::Result<()> {
     let db = connect_to_db(&database_url).await;
     let _ = Migrator::up(&db, None).await;
 
+    let host = env::var("HOST").unwrap_or(String::from("127.0.0.1"));
+    let port_string_env = env::var("PORT").unwrap_or(String::from("8080"));
+    let port: u16;
+    match port_string_env.parse::<u16>() {
+        Ok(parsed_port) => port = parsed_port,
+        Err(_) => port = 8080
+    }
+
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(db.clone()))
             .configure(init)
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind((host, port))?
     .run()
     .await?;
 
@@ -31,10 +39,11 @@ async fn main() -> std::io::Result<()> {
 }
 
 fn init(cfg: &mut web::ServiceConfig) {
+    let api_path = env::var("API_PATH").unwrap_or(String::from("/api"));
     cfg.service(handlers::auth::register);
     cfg.service(handlers::auth::login);
     cfg.service(
-        web::scope("/api")
+        web::scope(&api_path)
             .wrap(JwtMiddleware)
             .service(handlers::products::get_products)
             .service(handlers::products::get_product),
