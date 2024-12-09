@@ -1,4 +1,5 @@
-use actix_web::{web, App, HttpServer};
+use actix_web::{middleware, web, App, HttpServer};
+use api_error::APIError;
 use dotenvy::dotenv;
 use migration::{Migrator, MigratorTrait};
 use std::env;
@@ -9,6 +10,7 @@ mod db;
 mod handlers; 
 mod auth_utils;
 mod jwt_middleware;
+mod api_error;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -29,6 +31,10 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(db.clone()))
+            .wrap(middleware::Logger::default())
+            .app_data(web::JsonConfig::default().error_handler(|err, _| {
+                APIError::ValidationError(err.to_string()).into()
+            }))
             .configure(init)
     })
     .bind((host, port))?

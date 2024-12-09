@@ -1,34 +1,38 @@
-use actix_web::{get, web, HttpResponse, Responder};
+use actix_web::{get, web, HttpResponse};
 use entity::products;
 use sea_orm::{DatabaseConnection, EntityTrait};
 
+use crate::api_error::APIError;
+
 #[get("/products")]
-async fn get_products(db: web::Data<DatabaseConnection>) -> impl Responder {
+async fn get_products(db: web::Data<DatabaseConnection>) -> Result<HttpResponse, APIError> {
     match products::Entity::find()
         .all(db.get_ref())
         .await {
-            Ok(products) => HttpResponse::Ok().json(products),
+            Ok(products) => Ok(HttpResponse::Ok().json(products)),
             Err(err) => {
                 eprintln!("Error fetching products: {:?}", err);
-                HttpResponse::InternalServerError().body("Error fetching products")
+                Err(APIError::DatabaseError(err.to_string()))
             }
         }
 }
 
 #[get("/products/{id}")]
-async fn get_product(product_id: web::Path<i32>, db: web::Data<DatabaseConnection>) -> impl Responder {
+async fn get_product(product_id: web::Path<i32>, db: web::Data<DatabaseConnection>) -> Result<HttpResponse, APIError> {
     let id = product_id.into_inner();
     if id <= 0 {
-        return HttpResponse::BadRequest().body("Invalid Product ID");
+        return Err(
+            APIError::ValidationError("Invalid Product ID.".to_owned())
+        )
     }
 
     match products::Entity::find_by_id(id)
         .one(db.get_ref())
         .await {
-            Ok(products) => HttpResponse::Ok().json(products),
+            Ok(products) => Ok(HttpResponse::Ok().json(products)),
             Err(err) => {
                 eprintln!("Error fetching products: {:?}", err);
-                HttpResponse::InternalServerError().body("Error fetching products")
+                Err(APIError::DatabaseError(err.to_string()))
             }
         }
 }
