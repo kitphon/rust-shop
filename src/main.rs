@@ -52,6 +52,7 @@ fn init(cfg: &mut web::ServiceConfig) {
         web::scope(&api_path)
             .wrap(JwtMiddleware)
             .service(handlers::products::get_products)
-            .service(handlers::products::get_product),
+            .service(handlers::products::get_product)
+            .service(handlers::cart::add)
     );
 }

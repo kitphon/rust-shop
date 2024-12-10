@@ -2,5 +2,6 @@
 
 pub mod prelude;
 
+pub mod carts;
 pub mod customers;
 pub mod products;
