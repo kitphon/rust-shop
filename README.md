@@ -1,3 +1,6 @@
+# downloads and compiles all dependencies listed
+`cargo build`
+
 # start API
 `cargo run`
  
