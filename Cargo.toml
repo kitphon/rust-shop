@@ -14,7 +14,7 @@ sea-orm = { version = "1.1.2", features = ["sqlx-postgres", "runtime-tokio-rustl
 serde = { version = "1.0.215", features = [] }
 serde_json = "1.0.133"
 tokio = { version = "1.42.0", features = ["full"] }
-validator = "0.19.0"
+validator = { version = "0.19", features = ["derive"] }
 
 migration = { path = "migration" } # depends on your needs
 entity = { path = "entity" }

@@ -7,10 +7,15 @@ use entity::customers;
 use crate::auth_utils::generate_jwt;
 use crate::api_error::APIError;
 
-#[derive(Deserialize)]
+use validator::Validate;
+
+#[derive(Deserialize, Validate)]
 pub struct RegisterRequest {
+    #[validate(email(message = "invalid"))]
     pub email: String,
+    #[validate(length(min = 1, max = 255, message = "must be 1 - 255 characters long"))]
     pub name: String,
+    #[validate(length(min = 10, message = "must be at least 10 characters long"))]
     pub password: String,
 }
 
@@ -22,6 +27,11 @@ pub struct RegisterResponse {
 
 #[post("/customer/register")]
 pub async fn register(db: web::Data<DatabaseConnection>, form: web::Json<RegisterRequest>) -> Result<HttpResponse, APIError> {
+    match form.validate() {
+        Ok(_) => (),
+        Err(e) => return Err(APIError::ValidationError(e. to_string())),
+    };
+
     let password_hash = hash(&form.password, 12)
         .map_err(|_: bcrypt::BcryptError| APIError::InternalServerError)
         .expect("Failed to hash password");
@@ -44,9 +54,11 @@ pub async fn register(db: web::Data<DatabaseConnection>, form: web::Json<Registe
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Validate)]
 pub struct LoginRequest {
+    #[validate(email(message = "invalid"))]
     pub email: String,
+    #[validate(length(min = 1, message = "must be at least 1 character long"))]
     pub password: String,
 }
 
@@ -58,6 +70,11 @@ pub struct LoginResponse {
 
 #[post("/customer/login")]
 pub async fn login(db: web::Data<sea_orm::DatabaseConnection>, form: web::Json<LoginRequest>) -> Result<HttpResponse, APIError> {
+    match form.validate() {
+        Ok(_) => (),
+        Err(e) => return Err(APIError::ValidationError(e. to_string())),
+    };
+
     let user = customers::Entity::find()
         .filter(customers::Column::Email.eq(&form.email))
         .one(db.get_ref())
