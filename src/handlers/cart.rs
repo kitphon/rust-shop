@@ -1,4 +1,4 @@
-use actix_web::{post, web, HttpResponse};
+use actix_web::{delete, post, web, HttpResponse};
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, QueryFilter, ColumnTrait};
 use serde::Deserialize;
 use validator::Validate;
@@ -54,6 +54,22 @@ pub async fn add(
         Ok(_) => Ok(
             HttpResponse::Created().finish()
         ),
+        Err(e) => Err(APIError::DatabaseError(e.to_string()))
+    }
+}
+
+#[delete("/carts/clear")]
+async fn clear(db: web::Data<DatabaseConnection>, claims: web::ReqData<Claims>) -> Result<HttpResponse, APIError> {
+    let customer_id: i64 = claims.sub.into();
+
+    match carts::Entity::delete_many()
+        .filter(carts::Column::CustomerId.eq(customer_id))
+        .exec(db.get_ref())
+        .await
+    {
+        Ok(_) => Ok(HttpResponse::Ok().json({
+            serde_json::json!({ "message": "Cart cleared successfully" })
+        })),
         Err(e) => Err(APIError::DatabaseError(e.to_string()))
     }
 }
