@@ -6,7 +6,7 @@ use chrono::{Utc, Duration};
 
 // const SECRET_KEY: &[u8] = b"your_secret_key";
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
     pub sub: i32,
     pub email: String,

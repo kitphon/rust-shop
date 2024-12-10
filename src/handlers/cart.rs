@@ -4,25 +4,28 @@ use serde::Deserialize;
 use validator::Validate;
 
 use crate::api_error::APIError;
+use crate::auth_utils::Claims; 
 use entity::carts;
 
 #[derive(Deserialize, Validate)]
 struct CartRequest {
     pub product_id: i64,
-    pub amount: i32,
-    pub customer_id: i64
+    pub amount: i32
 }
 
 #[post("/carts/add")]
-pub async fn add(db: web::Data<DatabaseConnection>, req: web::Json<CartRequest>) -> Result<HttpResponse, APIError> {
+pub async fn add(
+    db: web::Data<DatabaseConnection>, req: web::Json<CartRequest>, claims: web::ReqData<Claims>
+) -> Result<HttpResponse, APIError> {
     match req.validate() {
         Ok(_) => (),
         Err(e) => return Err(APIError::ValidationError(e. to_string())),
     };
 
+    let customer_id: i64 = claims.sub.into();
     let existing_record = carts::Entity::find()
         .filter(carts::Column::ProductId.eq(req.product_id))
-        .filter(carts::Column::CustomerId.eq(req.customer_id))
+        .filter(carts::Column::CustomerId.eq(customer_id))
         .one(db.get_ref())
         .await
         .map_err(|e| APIError::DatabaseError(e.to_string()))?;
@@ -43,7 +46,7 @@ pub async fn add(db: web::Data<DatabaseConnection>, req: web::Json<CartRequest>)
     let new_item = carts::ActiveModel {
         product_id: sea_orm::ActiveValue::set(req.product_id),
         amount: sea_orm::ActiveValue::set(req.amount),
-        customer_id: sea_orm::ActiveValue::set(req.customer_id),
+        customer_id: sea_orm::ActiveValue::set(customer_id),
         ..Default::default()
     };
 

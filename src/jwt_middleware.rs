@@ -1,3 +1,4 @@
+use actix_web::HttpMessage;
 use actix_web::{dev::ServiceRequest, Error};
 use actix_web::dev::{Service, Transform};
 use futures::future::{ok, Ready};
@@ -48,7 +49,10 @@ where
             if let Ok(auth_str) = auth_value.to_str() {
                 if auth_str.starts_with("Bearer ") {
                     let token = auth_str.trim_start_matches("Bearer ");
-                    if validate_jwt(token).is_ok() {
+                    if let Ok(claims) = validate_jwt(token) {
+                        req
+                            .extensions_mut()
+                            .insert(claims);
                         return Box::pin(self.service.call(req));
                     }
                 }
