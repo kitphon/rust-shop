@@ -4,7 +4,7 @@
 # start API
 `cargo run`
  
-# manual run migrate
+# manually run migrations
 `cargo run -- migrate`
 
 # generate entity from database
