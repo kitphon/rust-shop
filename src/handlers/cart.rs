@@ -73,3 +73,28 @@ async fn clear(db: web::Data<DatabaseConnection>, claims: web::ReqData<Claims>) 
         Err(e) => Err(APIError::DatabaseError(e.to_string()))
     }
 }
+
+#[delete("/carts/{product_id}")]
+async fn remove_product(
+    db: web::Data<DatabaseConnection>, product_id_path: web::Path<i32>, claims: web::ReqData<Claims>
+) -> Result<HttpResponse, APIError> {
+    let product_id = product_id_path.into_inner();
+    if product_id <= 0 {
+        return Err(
+            APIError::ValidationError("Invalid Product ID.".to_owned())
+        )
+    }
+    let customer_id: i64 = claims.sub.into();
+
+    match carts::Entity::delete_many()
+        .filter(carts::Column::ProductId.eq(product_id))
+        .filter(carts::Column::CustomerId.eq(customer_id))
+        .exec(db.get_ref())
+        .await
+    {
+        Ok(_) => Ok(HttpResponse::Ok().json({
+            serde_json::json!({ "message": "The product was removed from the cart successfully." })
+        })),
+        Err(e) => Err(APIError::DatabaseError(e.to_string()))
+    }
+}

@@ -55,5 +55,6 @@ fn init(cfg: &mut web::ServiceConfig) {
             .service(handlers::products::get_product)
             .service(handlers::cart::add)
             .service(handlers::cart::clear)
+            .service(handlers::cart::remove_product)
     );
 }
