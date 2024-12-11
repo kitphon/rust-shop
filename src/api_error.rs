@@ -4,12 +4,13 @@ use actix_web::{
     HttpResponse,
 };
 use derive_more::derive::Display;
+use sea_orm::DbErr;
 use serde::Serialize;
 
 #[derive(Debug, Display)]
 pub enum APIError {
     #[display("Database error: {}", _0)]
-    DatabaseError(String),
+    DatabaseError(DbErr),
 
     #[display("Authentication error: {}", _0)]
     AuthenticationError(String),
@@ -21,12 +22,18 @@ pub enum APIError {
     InternalServerError,
 }
 
+impl From<DbErr> for APIError {
+    fn from(value: DbErr) -> Self {
+        APIError::DatabaseError(value)
+    }
+}
+
 impl error::ResponseError for APIError {
     fn error_response(&self) -> HttpResponse {
         match self {
             APIError::DatabaseError(message) => HttpResponse::InternalServerError().json(ErrorResponse{
                 error: "DatabaseError".to_string(),
-                message: message.clone(),
+                message: message.to_string(),
             }),
             APIError::AuthenticationError(message) => HttpResponse::Unauthorized().json(ErrorResponse{
                 error: "AuthenticationError".to_string(),

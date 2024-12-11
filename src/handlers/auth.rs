@@ -50,7 +50,7 @@ pub async fn register(db: web::Data<DatabaseConnection>, form: web::Json<Registe
                 email: user.email,
             }
         )),
-        Err(e) => Err(APIError::DatabaseError(e.to_string())),
+        Err(e) => Err(APIError::DatabaseError(e)),
     }
 }
 
@@ -95,6 +95,6 @@ pub async fn login(db: web::Data<sea_orm::DatabaseConnection>, form: web::Json<L
             }
         }
         Ok(None) => Err(APIError::AuthenticationError("Invalid credentials".to_string())),
-        Err(e) => Err(APIError::DatabaseError(e.to_string()))
+        Err(e) => Err(APIError::DatabaseError(e))
     }
 }

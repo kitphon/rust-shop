@@ -28,7 +28,7 @@ pub async fn add(
         .filter(carts::Column::CustomerId.eq(customer_id))
         .one(db.get_ref())
         .await
-        .map_err(|e| APIError::DatabaseError(e.to_string()))?;
+        .map_err(|e| APIError::DatabaseError(e))?;
 
     if let Some(record) = existing_record {
         let updated_amount = record.amount + req.amount;
@@ -38,7 +38,7 @@ pub async fn add(
         active_model
             .update(db.get_ref())
             .await
-            .map_err(|e| APIError::DatabaseError(e.to_string()))?;
+            .map_err(|e| APIError::DatabaseError(e))?;
 
         return Ok(HttpResponse::Ok().finish());
     }
@@ -54,7 +54,7 @@ pub async fn add(
         Ok(_) => Ok(
             HttpResponse::Created().finish()
         ),
-        Err(e) => Err(APIError::DatabaseError(e.to_string()))
+        Err(e) => Err(APIError::DatabaseError(e))
     }
 }
 
@@ -70,7 +70,7 @@ async fn clear(db: web::Data<DatabaseConnection>, claims: web::ReqData<Claims>) 
         Ok(_) => Ok(HttpResponse::Ok().json({
             serde_json::json!({ "message": "Cart cleared successfully" })
         })),
-        Err(e) => Err(APIError::DatabaseError(e.to_string()))
+        Err(e) => Err(APIError::DatabaseError(e))
     }
 }
 
@@ -95,6 +95,6 @@ async fn remove_product(
         Ok(_) => Ok(HttpResponse::Ok().json({
             serde_json::json!({ "message": "The product was removed from the cart successfully." })
         })),
-        Err(e) => Err(APIError::DatabaseError(e.to_string()))
+        Err(e) => Err(APIError::DatabaseError(e))
     }
 }
