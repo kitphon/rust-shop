@@ -2,4 +2,6 @@
 
 pub use super::carts::Entity as Carts;
 pub use super::customers::Entity as Customers;
+pub use super::order_items::Entity as OrderItems;
+pub use super::orders::Entity as Orders;
 pub use super::products::Entity as Products;

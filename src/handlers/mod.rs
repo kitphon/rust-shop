@@ -1,4 +1,4 @@
 pub mod auth;
 pub mod products;
 pub mod cart;
-// pub mod order;
+pub mod order;

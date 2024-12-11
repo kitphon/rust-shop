@@ -4,4 +4,7 @@ pub mod prelude;
 
 pub mod carts;
 pub mod customers;
+pub mod order_items;
+pub mod orders;
+pub mod order_status;
 pub mod products;
