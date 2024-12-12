@@ -20,11 +20,20 @@ pub enum APIError {
 
     #[display("internal server error")]
     InternalServerError,
+
+    #[display("Not found error")]
+    NotFoundError(String),
 }
 
 impl From<DbErr> for APIError {
     fn from(value: DbErr) -> Self {
         APIError::DatabaseError(value)
+    }
+}
+
+impl APIError {
+    pub fn from_option<T>(option: Option<T>, msg: &str) -> Result<T, APIError> {
+        option.ok_or_else(|| APIError::NotFoundError(msg.to_string()))
     }
 }
 
@@ -47,6 +56,10 @@ impl error::ResponseError for APIError {
                 error: "InternalServerError".to_string(),
                 message: "An unexpected error occurred".to_string(),
             }),
+            APIError::NotFoundError(message) => HttpResponse::NotFound().json(ErrorResponse{
+                error: "NotFoundError".to_string(),
+                message: message.clone()
+            }),
         }
     }
 
@@ -56,6 +69,7 @@ impl error::ResponseError for APIError {
             APIError::AuthenticationError(_) => StatusCode::UNAUTHORIZED,
             APIError::ValidationError(_) => StatusCode::BAD_REQUEST,
             APIError::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR,
+            APIError::NotFoundError(_) => StatusCode::NOT_FOUND,
         }
     }
 }

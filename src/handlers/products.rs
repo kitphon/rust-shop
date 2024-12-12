@@ -1,4 +1,4 @@
-use actix_web::{get, web, HttpResponse, Responder};
+use actix_web::{get, web, Responder};
 use entity::products;
 use sea_orm::{DatabaseConnection, EntityTrait};
 
@@ -13,17 +13,15 @@ async fn get_products(db: web::Data<DatabaseConnection>) -> Result<impl Responde
 async fn get_product(
     product_id: web::Path<i32>,
     db: web::Data<DatabaseConnection>,
-) -> Result<HttpResponse, APIError> {
+) -> Result<impl Responder, APIError> {
     let id = product_id.into_inner();
     if id <= 0 {
         return Err(APIError::ValidationError("Invalid Product ID.".to_owned()));
     }
 
-    match products::Entity::find_by_id(id).one(db.get_ref()).await {
-        Ok(products) => Ok(HttpResponse::Ok().json(products)),
-        Err(err) => {
-            eprintln!("Error fetching products: {:?}", err);
-            Err(APIError::DatabaseError(err))
-        }
-    }
+    let product = products::Entity::find_by_id(id).one(db.get_ref()).await?;
+    Ok(web::Json(APIError::from_option(
+        product,
+        "No Product Found",
+    )?))
 }
