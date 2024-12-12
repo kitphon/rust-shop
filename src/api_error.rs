@@ -23,6 +23,9 @@ pub enum APIError {
 
     #[display("Not found error")]
     NotFoundError(String),
+
+    #[display("Bad request error")]
+    BadRequestError(String),
 }
 
 impl From<DbErr> for APIError {
@@ -60,6 +63,10 @@ impl error::ResponseError for APIError {
                 error: "NotFoundError".to_string(),
                 message: message.clone()
             }),
+            APIError::BadRequestError(message) => HttpResponse::BadRequest().json(ErrorResponse{
+                error: "BadRequestError".to_string(),
+                message: message.clone()
+            }),
         }
     }
 
@@ -70,6 +77,7 @@ impl error::ResponseError for APIError {
             APIError::ValidationError(_) => StatusCode::BAD_REQUEST,
             APIError::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR,
             APIError::NotFoundError(_) => StatusCode::NOT_FOUND,
+            APIError::BadRequestError(_) => StatusCode::BAD_REQUEST
         }
     }
 }
