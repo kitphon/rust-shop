@@ -1,4 +1,4 @@
-use actix_web::{post, web, HttpResponse, Responder};
+use actix_web::{post, web, Responder};
 use bcrypt::{hash, verify};
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
@@ -83,7 +83,7 @@ pub struct LoginResponse {
 pub async fn login(
     db: web::Data<sea_orm::DatabaseConnection>,
     form: web::Json<LoginRequest>,
-) -> Result<HttpResponse, APIError> {
+) -> Result<impl Responder, APIError> {
     match form.validate() {
         Ok(_) => (),
         Err(e) => return Err(APIError::ValidationError(e.to_string())),
@@ -92,13 +92,13 @@ pub async fn login(
     let user = customers::Entity::find()
         .filter(customers::Column::Email.eq(&form.email))
         .one(db.get_ref())
-        .await;
+        .await?;
 
     match user {
-        Ok(Some(user)) => {
+        Some(user) => {
             if verify(&form.password, &user.password_hash).unwrap_or(false) {
                 let token = generate_jwt(&user.id, &user.email, &user.name);
-                Ok(HttpResponse::Ok().json(LoginResponse {
+                Ok(web::Json(LoginResponse {
                     message: "Login successful".to_string(),
                     token,
                 }))
@@ -108,9 +108,8 @@ pub async fn login(
                 ))
             }
         }
-        Ok(None) => Err(APIError::AuthenticationError(
+        None => Err(APIError::AuthenticationError(
             "Invalid credentials".to_string(),
         )),
-        Err(e) => Err(APIError::DatabaseError(e)),
     }
 }
