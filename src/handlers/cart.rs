@@ -6,6 +6,7 @@ use validator::Validate;
 use crate::api_error::APIError;
 use crate::auth_utils::Claims;
 use entity::carts;
+use sea_orm::ActiveValue::Set;
 
 #[derive(Deserialize, Validate)]
 struct CartRequest {
@@ -18,7 +19,7 @@ pub async fn add(
     db: web::Data<DatabaseConnection>,
     req: web::Json<CartRequest>,
     claims: web::ReqData<Claims>,
-) -> Result<HttpResponse, APIError> {
+) -> Result<impl Responder, APIError> {
     match req.validate() {
         Ok(_) => (),
         Err(e) => return Err(APIError::ValidationError(e.to_string())),
@@ -29,33 +30,33 @@ pub async fn add(
         .filter(carts::Column::ProductId.eq(req.product_id))
         .filter(carts::Column::CustomerId.eq(customer_id))
         .one(db.get_ref())
-        .await
-        .map_err(|e| APIError::DatabaseError(e))?;
+        .await?;
 
     if let Some(record) = existing_record {
         let updated_amount = record.amount + req.amount;
         let mut active_model: carts::ActiveModel = record.into();
-        active_model.amount = sea_orm::ActiveValue::Set(updated_amount);
+        active_model.amount = Set(updated_amount);
+        active_model.updated_at = Set(chrono::Utc::now().fixed_offset());
 
         active_model
             .update(db.get_ref())
-            .await
-            .map_err(|e| APIError::DatabaseError(e))?;
+            .await?;
 
         return Ok(HttpResponse::Ok().finish());
     }
 
     let new_item = carts::ActiveModel {
-        product_id: sea_orm::ActiveValue::set(req.product_id),
-        amount: sea_orm::ActiveValue::set(req.amount),
-        customer_id: sea_orm::ActiveValue::set(customer_id),
+        created_at: Set(chrono::Utc::now().fixed_offset()),
+        updated_at: Set(chrono::Utc::now().fixed_offset()),
+        product_id: Set(req.product_id),
+        amount: Set(req.amount),
+        customer_id: Set(customer_id),
         ..Default::default()
     };
 
-    match new_item.insert(db.get_ref()).await {
-        Ok(_) => Ok(HttpResponse::Created().finish()),
-        Err(e) => Err(APIError::DatabaseError(e)),
-    }
+    new_item.insert(db.get_ref()).await?;
+
+    Ok(HttpResponse::Created().finish())
 }
 
 #[delete("/carts/clear")]
